@@ -32,8 +32,12 @@ func (w *ResponseWriter) WriteHeader(statusCode int) {
 	w.statusCode = statusCode
 }
 
+func (w *ResponseWriter) Version(version string) {
+	w.version = version
+}
+
 func (w *ResponseWriter) Header() http.Header {
-	return w.Header()
+	return w.headers
 }
 
 func (w *ResponseWriter) Marshal() []byte {
@@ -47,14 +51,12 @@ func (w *ResponseWriter) Marshal() []byte {
 	buf.WriteString(clrf)
 
 	headers := w.Header()
-
 	for k, v := range headers {
 		buf.WriteString(k)
 		buf.WriteString(":")
 		buf.WriteString(strings.Join(v, ","))
 		buf.WriteString(clrf)
 	}
-
 	buf.WriteString(clrf)
 	io.Copy(buf, w.writer)
 

@@ -45,9 +45,9 @@ func (h *Handler) HandlerFunc(pattern string, handler http.HandlerFunc) {
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	handler, ok := h.routes[r.URL.Path]
-	println("found handler")
 	if !ok {
 		w.WriteHeader(http.StatusNotFound)
+		w.Write([]byte("404 not found"))
 		return
 	}
 

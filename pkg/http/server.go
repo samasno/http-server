@@ -4,9 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
-	"fmt"
 	"io"
-	"log"
 	"net"
 	"net/http"
 	"net/url"
@@ -23,6 +21,8 @@ type Server struct {
 }
 
 func (s *Server) ListenAndServeHttp() error {
+	s.connections = map[int]bool{}
+
 	parseAddr := strings.Split(s.Addr, ":")
 	if len(parseAddr) != 2 {
 		return errors.New("server Addr requires full ip address and port, eg 0.0.0.0:8080")
@@ -75,19 +75,16 @@ func (s *Server) ListenAndServeHttp() error {
 			}()
 			r, err := HandleRequest(c)
 			if err != nil {
-				println(err.Error())
+				return err
 			}
 
 			w := NewResponseWriter()
+			w.Version(r.Proto)
 
 			s.Handler.ServeHTTP(w, r)
 
-			n, err := conn.Write(w.Marshal())
-			if err != nil {
-				println(err.Error())
-			}
+			n, _ := conn.Write(w.Marshal())
 
-			println(fmt.Sprintf("wrote %d bytes to client", n))
 			return nil
 		}(conn)
 	}
@@ -122,13 +119,11 @@ func newSocket(port int, addr [4]byte) (*TcpSocket, error) {
 
 	err = syscall.SetNonblock(fd, false)
 	if err != nil {
-		log.Println(err.Error())
 		return nil, syscall.Close(fd)
 	}
 
 	err = syscall.Bind(fd, sa)
 	if err != nil {
-		log.Println(err.Error())
 		return nil, syscall.Close(fd)
 	}
 
@@ -198,8 +193,6 @@ func parseHttpRequest(data []byte, conn *Conn) (*http.Request, error) {
 		}
 
 	}
-
-	println(fmt.Sprintf("got headers %v\n", headers))
 
 	// build body after double line break
 	body := []byte{}
